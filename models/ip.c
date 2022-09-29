@@ -1,5 +1,5 @@
 
 struct Ip {
-    char *name;
+    char * name;
     struct Ip* next;
 };
