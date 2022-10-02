@@ -4,12 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-
-
-
-
-
-
 // Driver code
 Config *get_config()
 {
