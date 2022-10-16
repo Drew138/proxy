@@ -1,6 +1,7 @@
 class Node:
-    def __init__(self, data):
-        self.data = data
+    def __init__(self, req, res):
+        self.res = res
+        self.req = req
         self.next = None
         self.prev = None
 
@@ -66,11 +67,20 @@ class CACHE:
     def __init__(self, path_deq: str, path_in_deq: str, max_size: int):
         self.in_deq = {} # TODO: Read from file!~
         self.deq = DEQ() # TODO: Read from file!~
+        self.DELIMITER = 'PENE' # TODO: Define delimiter
         
         with open(path_in_deq, 'r') as file:
             for line in file.readlines():
-                self.in_deq[line] = None
+                res, req = line.split(self.DELIMITER)
+                temp = Node(req, res)
+                self.deq.add(temp)
+                self.in_deq[req] = None
+                
         
+        
+        dict = {
+            "get algo 110": Node
+        }
         
         self.MAX_SIZE = None # TODO: CHANGE TO ENV!
     
@@ -89,4 +99,4 @@ class CACHE:
             self.deq.to_front(node)
             return node.data # TODO: RETORNAR EL RESPONSE! O EL ARCHIVO, LO QUE SEA!
         
-        self.add(request, response)
+        return self.add(request, response)
