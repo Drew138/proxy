@@ -1,4 +1,6 @@
 import sys
+import time
+import threading
 
 # Definition of a Node for a Double Ended Queue
 class Node:
@@ -6,6 +8,7 @@ class Node:
         self.res : str = res
         self.req : str = req
         self.TTL : int = TTL
+        self.last_access : time.time = time.time()
         self.next : Node = None
         self.prev : Node = None
 
@@ -82,13 +85,13 @@ class DEQ:
         return deleted
 
 class CACHE:
-    def __init__(self, port, targets, cache_size, ttl, unit_time, delimiter, path_to_persistence):
+    def __init__(self, cache_size: int, ttl: int, delimiter: str, path_to_persistence: str, lock: threading.Lock):
         # Config variables
         self.PATH_TO_PERSISTENCE : str = path_to_persistence
         self.MAX_SIZE : int = cache_size
         self.DELIMITER : str = delimiter
         self.TTL : int = ttl
-        self.UNIT_TIME : int = unit_time
+        self.lock : threading.Lock = lock
         
         # Cache variables
         self.CURRENT_SIZE : int = 0
@@ -103,57 +106,68 @@ class CACHE:
                 self.in_deq[req] = node
     
     def add(self, request: str, response: str):
-        # Check if cache is full and delete oldest nodes while it is
-        while self.CURRENT_SIZE + sys.getsizeof(response) > self.MAX_SIZE:
-            old_node = self.deq.pop()
-            del self.in_deq[old_node.req]
-            self.CURRENT_SIZE -= sys.getsizeof(old_node.res)
+        with self.lock:
+            # Check if cache is full and delete oldest nodes while it is
+            while self.CURRENT_SIZE + sys.getsizeof(response) > self.MAX_SIZE:
+                old_node = self.deq.pop()
+                del self.in_deq[old_node.req]
+                self.CURRENT_SIZE -= sys.getsizeof(old_node.res)
 
-        # Add request to cache
-        node = self.deq.add([request, response, self.TTL])
-        self.CURRENT_SIZE += sys.getsizeof(response)
-        self.in_deq[request] = node
+            # Add request to cache
+            node = self.deq.add([request, response, self.TTL])
+            self.CURRENT_SIZE += sys.getsizeof(response)
+            self.in_deq[request] = node
 
     def get(self, request: str):
-        # Check if request is in cache
-        if request in self.in_deq:
-            node = self.in_deq[request] # Get node from cache
-            node.TTL = self.TTL # Reset TTL
-            self.deq.to_front(node) # Move node to front of cache
-            return node.res
-        
-        # Request not in cache, return None
-        return None
+        with self.lock:
+            # Check if request is in cache
+            if request in self.in_deq:
+                node = self.in_deq[request] # Get node from cache
+                node.TTL = self.TTL # Reset TTL
+                node.last_access = time.time() # Update last access time
+                self.deq.to_front(node) # Move node to front of cache
+                return node.res
+            
+            # Request not in cache, return None
+            return None
     
     def update_time(self):
-        curr : Node = self.deq.tail
-        
-        # Iterate through cache
-        while curr != None:
-            node = curr
+        with self.lock:
+            curr : Node = self.deq.tail
             
-            # Check if TTL is 0 or less
-            node.TTL -= self.UNIT_TIME
-            
-            # If TTL is 0 or less, remove node from cache
-            if node.TTL <= 0:
-                self.deq.pop()
-                self.CURRENT_SIZE -= sys.getsizeof(node.res)
-                del self.in_deq[node.req]
-            
-            # Move to next node
-            curr = curr.prev
+            # Iterate through cache
+            while curr != None:
+                node = curr
+                
+                # Get current time
+                now = time.time()
+                
+                # Check if TTL is 0 or less since last access
+                node.TTL -= now - node.last_access
+                
+                # Update last access time
+                node.last_access = now
+                
+                # If TTL is 0 or less, remove node from cache
+                if node.TTL <= 0:
+                    self.deq.pop()
+                    self.CURRENT_SIZE -= sys.getsizeof(node.res)
+                    del self.in_deq[node.req]
+                
+                # Move to next node
+                curr = curr.prev
     
     def save_cache(self):
-        curr : Node = self.deq.head
-        
-        # Iterate through cache
-        while curr != None:
-            node = curr
+        with self.lock: 
+            curr : Node = self.deq.head
             
-            # Save node to persistence
-            with open(self.persistence, 'w') as file:
-                file.write(f'{node.res}{self.DELIMITER}{node.req}{self.DELIMITER}{node.TTL}'+'\n')
-            
-            # Move to next node
-            curr = curr.next
+            # Iterate through cache
+            while curr != None:
+                node = curr
+                
+                # Save node to persistence
+                with open(self.persistence, 'w') as file:
+                    file.write(f'{node.res}{self.DELIMITER}{node.req}{self.DELIMITER}{node.TTL}'+'\n')
+                
+                # Move to next node
+                curr = curr.next
