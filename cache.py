@@ -82,13 +82,13 @@ class DEQ:
         return deleted
 
 class CACHE:
-    def __init__(self):
+    def __init__(self, port, targets, cache_size, ttl, unit_time, delimiter, path_to_persistence):
         # Config variables
-        self.PATH_TO_PERSISTENCE : str = 'None' # TODO: read from config
-        self.MAX_SIZE : int = None # TODO: read from config
-        self.DELIMITER : str = None # TODO: read from config
-        self.TTL : int = None # TODO: read from config
-        self.UNIT_TIME : int = None # TODO: read from config
+        self.PATH_TO_PERSISTENCE : str = path_to_persistence
+        self.MAX_SIZE : int = cache_size
+        self.DELIMITER : str = delimiter
+        self.TTL : int = ttl
+        self.UNIT_TIME : int = unit_time
         
         # Cache variables
         self.CURRENT_SIZE : int = 0
