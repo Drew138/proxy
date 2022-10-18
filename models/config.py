@@ -1,6 +1,8 @@
+from cache import Cache
 from load_balancer import LoadBalancer
 from models.target import Target
 import os
+from threading import Lock
 
 
 class Config:
@@ -17,7 +19,8 @@ class Config:
             os.path.expanduser('~'),
             'persistence.proxy'
         )
-        # can not be assigned via config file
+        # path to config file can not be assigned
+        # via config file for obvious reasons.
         self.path_to_config_file: str = os.path.join(
             os.path.expanduser('~'),
             'proxy.conf'
@@ -36,12 +39,19 @@ class Config:
             'delimiter',
             'path_to_persistence'
         }
+        self.lock: Lock = Lock()
         self.read_config()
-        self.read_cache()
+        self.init_cache()
         self.sanity_check_config()
 
-    def read_cache(self) -> None:
-        pass
+    def init_cache(self) -> None:
+        self.cache: Cache = Cache(
+            self.cache_size,
+            self.ttl,
+            self.delimitier,
+            self.path_to_persistence,
+            self.lock
+        )
 
     def parse_targets(self, targets_string: str) -> list[Target]:
         targets: list[Target] = []
