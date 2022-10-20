@@ -1,4 +1,4 @@
-from target import Target
+from models.target import Target
 
 
 class LoadBalancer:

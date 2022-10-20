@@ -1,5 +1,5 @@
 from cache import Cache
-from load_balancer import LoadBalancer
+from models.load_balancer import LoadBalancer
 from models.target import Target
 import os
 from threading import Lock
@@ -7,63 +7,61 @@ from threading import Lock
 
 class Config:
     def __init__(self) -> None:
-        # targets is not included in instance
-        # properties as it is handled by load
-        # the load balancer.
-        self.port: str = '80'
-        self.cache_size: int = 400
-        self.ttl: int = 20 * 60
-        self.unit_time: int = 300
-        self.delimitier: str = ''
-        self.path_to_persistence: str = os.path.join(
-            os.path.expanduser('~'),
-            'persistence.proxy'
-        )
-        # path to config file can not be assigned
-        # via config file for obvious reasons.
         self.path_to_config_file: str = os.path.join(
             os.path.expanduser('~'),
             'proxy.conf'
         )
-        self.path_to_log: str = os.path.join(
-            os.path.expanduser('~'),
-            'proxy.log'
-        )
-
+        self.delimiter = 'hola'  # TODO change
         self.vars = {
-            'port',
-            'targets',
-            'cache_size',
-            'ttl',
-            'unit_time',
-            'delimiter',
-            'path_to_persistence'
+            'port': 8080,
+            'cache_size': 400,
+            'targets': ['127.0.0.1:8000'],
+            'ttl': 20 * 60,
+            'unit_time': 300,
+            'connection_timeout': 10,
+            'path_to_persistence': os.path.join(
+                os.path.expanduser('~'),
+                'persistence.proxy'
+            ),
+            'path_to_log': os.path.join(
+                os.path.expanduser('~'),
+                'proxy.log'
+            )
         }
         self.lock: Lock = Lock()
         self.read_config()
         self.init_cache()
         self.sanity_check_config()
+        self.set_load_balancer()
 
     def init_cache(self) -> None:
         self.cache: Cache = Cache(
-            self.cache_size,
-            self.ttl,
-            self.delimitier,
-            self.path_to_persistence,
+            self.vars['cache_size'],
+            self.vars['ttl'],
+            self.delimiter,
+            self.vars['path_to_persistence'],
             self.lock
         )
 
-    def parse_targets(self, targets_string: str) -> list[Target]:
+    def parse_targets(self, targets_string: list[str]) -> list[Target]:
         targets: list[Target] = []
         for target in targets_string:
             split_target: list[str] = target.split(':')
             if len(split_target) != 2:
                 raise Exception('Invalid configuration file')
-            ip, host = split_target
-            targets.append(Target(ip, host))
+            host, port = split_target
+            port = int(port)
+            targets.append(Target(host, port))
         return targets
 
+    def set_load_balancer(self):
+        self.load_balancer: LoadBalancer = LoadBalancer(
+            self.parse_targets(self.vars['targets'])
+        )
+
     def read_config(self) -> None:
+        if not os.path.exists(self.path_to_config_file):
+            return
         with open(self.path_to_config_file) as f:
             while line := f.readline():
                 tokens: list[str] = line.split('=')
@@ -75,30 +73,20 @@ class Config:
                         f'{key} is not a valid variable in the configuration file'
                     )
                 if key == 'port':
-                    self.port: str = val
+                    self.vars['port'] = int(val)
                 elif key == 'cache_size':
-                    self.cache_size: int = int(val)
+                    self.vars['cache_size'] = int(val)
                 elif key == 'ttl':
-                    self.ttl: int = int(val)
+                    self.vars['ttl'] = int(val)
                 elif key == 'unit_time':
-                    self.unit_time: int = int(val)
-                else:
-                    self.load_balancer: LoadBalancer = LoadBalancer(
-                        self.parse_targets(val)
-                    )
+                    self.vars['unit_time'] = int(val)
+                elif key == 'targets':
+                    self.vars['targets'] = val.split(',')
+                elif key == 'connection_timeout':
+                    self.vars['connection_timeout'] = int(val)
 
     def sanity_check_config(self) -> None:
-        for var in self.vars:
-            if not hasattr(self, var):
-                raise Exception(f'{var} missing in configuration file')
-
-        for var in self.vars:
-            if getattr(self, var) == '':
+        for value in self.vars.values():
+            if not value:
                 raise Exception(
-                    f'{var} defined in configuration file can not be empty')
-
-        if not hasattr(self, 'load_balancer'):
-            raise Exception('load_balancer missing in configuration file')
-
-        if not hasattr(self, 'cache'):
-            raise Exception('load_balancer missing in configuration file')
+                    f'{value} defined in configuration file can not be null')

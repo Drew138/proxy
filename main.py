@@ -1,5 +1,5 @@
 from models.config import Config
-from .connection import start_server
+from connection import start_server
 
 
 def main() -> None:

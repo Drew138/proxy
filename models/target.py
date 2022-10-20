@@ -1,5 +1,5 @@
 class Target:
 
-    def __init__(self, host: str, port: str) -> None:
+    def __init__(self, host: str, port: int) -> None:
         self.host: str = host
-        self.port: str = port
+        self.port: int = port
