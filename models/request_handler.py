@@ -9,8 +9,6 @@ class RequestHandlder:
     def __init__(self, connection: socket.socket, config: Config) -> None:
         self.target: Target = config.load_balancer.next()
         self.connection: socket.socket = connection
-        self.request_data_pool: bytes = bytes()
-        self.response_data_pool: bytes = bytes()
         self.config: Config = config
         self.SEPARATOR = b'\r\n\r\n'
 
@@ -29,7 +27,7 @@ class RequestHandlder:
                 pass
         return logged_method
 
-    @_handle_logging
+    # @_handle_logging
     def handle(self) -> None:
         request_header, request_content = self.receive_data(self.connection)
         request: bytes = request_header + self.SEPARATOR + request_content
