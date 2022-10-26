@@ -113,11 +113,15 @@ class Cache:
             print('self.PATH_TO_PERSISTENCE', self.PATH_TO_PERSISTENCE)
             # Load cache from persistence
             with open(self.PATH_TO_PERSISTENCE, 'r') as file:
-                for line in reversed(file.readlines()):
+                content = "\n".join(file.readlines())
+                registers = content.split(self.DELIMITER+self.DELIMITER+self.DELIMITER)
+                
+                for line in registers:
                     res, req, TTL = line.split(self.DELIMITER)
+                    TTL = int(TTL)
                     node = self.deq.add([req, res, TTL])
                     self.in_deq[req] = node
-
+    
     def add(self, request: str, response: str):
         with self.lock:
             # Check if cache is full and delete oldest nodes while it is
@@ -189,7 +193,7 @@ class Cache:
                 # Save node to persistence
                 with open(self.PATH_TO_PERSISTENCE, 'w') as file:
                     file.write(
-                        f'{node.res}{self.DELIMITER}{node.req}{self.DELIMITER}{node.TTL}'+'\n')
+                        f'{node.res}{self.DELIMITER}{node.req}{self.DELIMITER}{node.TTL}'+{self.DELIMITER}+{self.DELIMITER}+{self.DELIMITER})
 
                 # Move to next node
                 curr = curr.next
