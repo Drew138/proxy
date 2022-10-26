@@ -29,36 +29,36 @@ class RequestHandlder:
         def logged_method(self, *args, **kwargs) -> None:
             try:
                 request, response = function(self, *args, **kwargs)
-                logging.info(
-                    '\n=== Request ===\n%s\n=== Response ===\n%s', request, response)
-                print('\n=== Request ===\n%s\n=== Response ===\n%s',
-                      request, response)
+                tmp = '\n=== Request ===\n%s\n=== Response ===\n%s'
+                logging.info(tmp, request, response)
+                print(tmp, request, response)
             except Exception as e:
                 print(e)
                 logging.error('Error: %s', e)
+            finally:
+                self.connection.close()
         return logged_method
 
     @_handle_logging
     def handle(self) -> tuple[bytes, bytes]:
-        request_header, request_content = self.receive_data(self.connection)
-        request: bytes = request_header + self.SEPARATOR + request_content
-        if not (response := self.is_cached(request)):
+        request: bytes = self.receive_data(self.connection)
+        response, can_be_cached = self.is_cached(request)
+        if not (response and can_be_cached):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as _socket:
                 _socket.connect((self.target.host, self.target.port))
                 _socket.settimeout(self.config.vars['connection_timeout'])
                 self.send_data(_socket, request)
-                response_header, response_content = self.receive_data(_socket)
-                response = response_header + self.SEPARATOR + response_content
+                response = self.receive_data(_socket)
 
                 # Cache response
-                self.cache_response(request, response)
+                if can_be_cached:
+                    self.cache_response(request, response)
 
         self.send_data(self.connection, response)
-        self.connection.close()
 
         return request, response
 
-    def receive_data(self, _socket: socket.socket) -> tuple[bytes, bytes]:
+    def receive_data(self, _socket: socket.socket) -> bytes:
         buffer: bytes = bytes()
         while not self.is_end_of_header(buffer):
             data: bytes = _socket.recv(1024)
@@ -77,7 +77,7 @@ class RequestHandlder:
             data: bytes = _socket.recv(1024)
             content += data
 
-        return header, content
+        return header + self.SEPARATOR + content
 
     def is_end_of_header(self, buffer) -> bool:
         return self.SEPARATOR in buffer
@@ -88,18 +88,20 @@ class RequestHandlder:
     def send_data(self, _socket: socket.socket, data_pool: bytes) -> None:
         _socket.sendall(data_pool)
 
-    def is_cached(self, request):
-        print(request)
-        response = self.config.cache.get(request.decode('utf-8'))
-        print("=============== response ===============")
-        print(response)
-        print(request.decode('utf-8'))
-        if response:
-            print("returned cached response")
-            return response.encode()
-        return None
+    @staticmethod
+    def can_be_cached(data: bytes) -> bool:
+        return data.startswith((b'HEAD', b'GET'))
+
+    def is_cached(self, request) -> tuple[bytes, bool]:
+        # response = self.config.cache.get(request.decode('utf-8'))
+        response = self.config.cache.get(request)
+        can_be_cached = self.can_be_cached(request)
+        # if response:
+        #     return response.encode()
+        return response, can_be_cached
 
     def cache_response(self, request: bytes, response: bytes) -> None:
         encoded_request_header: str = request.decode('utf-8')
         encoded_response: str = response.decode('utf-8')
         self.config.cache.add(encoded_request_header, encoded_response)
+        self.config.cache.add(header, response)

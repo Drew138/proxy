@@ -2,7 +2,6 @@ from cache import Cache
 from models.load_balancer import LoadBalancer
 from models.target import Target
 import os
-from threading import Lock
 
 
 class Config:
@@ -29,7 +28,6 @@ class Config:
             ),
         }
         self.sleep_time: int = 20
-        self.lock: Lock = Lock()
         self.read_config()
         self.init_cache()
         self.sanity_check_config()
@@ -41,7 +39,6 @@ class Config:
             self.vars['ttl'],
             self.delimiter,
             self.vars['path_to_persistence'],
-            self.lock,
             self.sleep_time
         )
 
@@ -63,6 +60,8 @@ class Config:
 
     def read_config(self) -> None:
         if not os.path.exists(self.path_to_config_file):
+            print('Configuration file not found')
+            print('Proceeding with default settings')
             return
         with open(self.path_to_config_file) as f:
             while line := f.readline():
