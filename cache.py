@@ -11,17 +11,17 @@ class Node:
         self.res: str = res
         self.req: str = req
         self.TTL: int = TTL
-        self.last_access: time.time = time.time()
-        self.next: Node = None
-        self.prev: Node = None
+        self.last_access: float = time.time()
+        self.next: Node | None = None
+        self.prev: Node | None = None
 
 # Definition of a Double Ended Queue
 
 
 class DEQ:
     def __init__(self):
-        self.head: Node = None
-        self.tail: Node = None
+        self.head: Node | None = None
+        self.tail: Node | None = None
         self.size: int = 0
 
     # Add a new node to the front of the queue and return it
@@ -68,14 +68,14 @@ class DEQ:
     # Remove the last node from the queue and return it
     def pop(self):
         # If the DEQ is empty, there is nothing to pop, so return None
-        if self.size() == 0:
+        if self.size == 0:
             return None
 
         # Reduce size by 1
         self.size -= 1
 
         # If there is only one node in the queue, set the head and tail to None and return the it
-        if self.size() == 1:
+        if self.size == 1:
             node = self.head
             node.next, node.prev = None, None
             self.head, self.tail = None, None
@@ -102,14 +102,14 @@ class Cache:
         self.CURRENT_SIZE: int = 0
         self.in_deq: dict = {}
         self.deq: DEQ = DEQ()
-        
+
         # Time
         self.SLEEP = sleep
 
         print('Loading cache...')
         if os.path.exists(self.PATH_TO_PERSISTENCE):
             print('Cache found, loading...')
-            
+
             print('self.PATH_TO_PERSISTENCE', self.PATH_TO_PERSISTENCE)
             # Load cache from persistence
             with open(self.PATH_TO_PERSISTENCE, 'r') as file:
@@ -180,15 +180,16 @@ class Cache:
         with self.lock:
             curr: Node = self.deq.head
 
+            print("chimbo de burro")
             # Iterate through cache
+            print(curr)
             while curr != None:
                 node = curr
 
                 # Save node to persistence
-                with open(self.persistence, 'w') as file:
+                with open(self.PATH_TO_PERSISTENCE, 'w') as file:
                     file.write(
                         f'{node.res}{self.DELIMITER}{node.req}{self.DELIMITER}{node.TTL}'+'\n')
 
                 # Move to next node
                 curr = curr.next
-

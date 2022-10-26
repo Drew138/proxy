@@ -5,7 +5,6 @@ from models.target import Target
 import logging
 
 
-
 class RequestHandlder:
 
     def __init__(self, connection: socket.socket, config: Config) -> None:
@@ -13,12 +12,12 @@ class RequestHandlder:
         self.connection: socket.socket = connection
         self.config: Config = config
         self.SEPARATOR = b'\r\n\r\n'
-        
+
         logging.basicConfig(
-            level=logging.INFO, 
-            filename= self.config.vars['path_to_log'], 
-            filemode='a', 
-            format='%(asctime)s - %(levelname)s - %(message)s', 
+            level=logging.INFO,
+            filename=self.config.vars['path_to_log'],
+            filemode='a',
+            format='%(asctime)s - %(levelname)s - %(message)s',
             datefmt='%d-%b-%y %H:%M:%S'
         )
 
@@ -30,8 +29,10 @@ class RequestHandlder:
         def logged_method(self, *args, **kwargs) -> None:
             try:
                 request, response = function(self, *args, **kwargs)
-                logging.info('=== Request ===\n%s\n=== Response ===\n%s', request, response)
-                print('=== Request ===\n%s\n=== Response ===\n%s', request, response)
+                logging.info(
+                    '=== Request ===\n%s\n=== Response ===\n%s', request, response)
+                print('=== Request ===\n%s\n=== Response ===\n%s',
+                      request, response)
             except Exception as e:
                 print(e)
                 logging.error('Error: %s', e)
@@ -43,19 +44,19 @@ class RequestHandlder:
         request: bytes = request_header + self.SEPARATOR + request_content
         if not (response := self.is_cached(request_header)):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as _socket:
+                print("entered")
                 _socket.connect((self.target.host, self.target.port))
                 _socket.settimeout(self.config.vars['connection_timeout'])
                 self.send_data(_socket, request)
                 response_header, response_content = self.receive_data(_socket)
                 response = response_header + self.SEPARATOR + response_content
-                
+
                 # Cache response
                 self.cache_response(request_header, response)
-        
-        
+
         self.send_data(self.connection, response)
         self.connection.close()
-        
+
         return request, response
 
     def receive_data(self, _socket: socket.socket) -> tuple[bytes, bytes]:

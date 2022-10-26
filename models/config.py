@@ -13,8 +13,8 @@ class Config:
         )
         self.delimiter = '¬'  # TODO change
         self.vars = {
-            'port': 8080,
-            'cache_size': 400,
+            'port': 8088,
+            'cache_size': 40000000000000000000,
             'targets': ['127.0.0.1:8000'],
             'ttl': 20 * 60,
             'unit_time': 300,
@@ -28,7 +28,7 @@ class Config:
                 'proxy.log'
             ),
         }
-        self.sleep_time: int = 300
+        self.sleep_time: int = 20
         self.lock: Lock = Lock()
         self.read_config()
         self.init_cache()
