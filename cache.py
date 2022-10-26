@@ -150,7 +150,6 @@ class Cache:
             self.save_cache()
             time.sleep(self.SLEEP)
 
-    
     def update_time(self):
         with self.lock:
             curr: Node = self.deq.tail
