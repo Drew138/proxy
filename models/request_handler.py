@@ -4,13 +4,7 @@ from models.config import Config
 from models.target import Target
 import logging
 
-logging.basicConfig(
-    level=logging.INFO, 
-    filename='proxy.log', 
-    filemode='a', 
-    format='%(asctime)s - %(levelname)s - %(message)s', 
-    datefmt='%d-%b-%y %H:%M:%S'
-)
+
 
 class RequestHandlder:
 
@@ -19,6 +13,14 @@ class RequestHandlder:
         self.connection: socket.socket = connection
         self.config: Config = config
         self.SEPARATOR = b'\r\n\r\n'
+        
+        logging.basicConfig(
+            level=logging.INFO, 
+            filename= self.config.vars['path_to_log'], 
+            filemode='a', 
+            format='%(asctime)s - %(levelname)s - %(message)s', 
+            datefmt='%d-%b-%y %H:%M:%S'
+        )
 
     def run(self) -> None:
         threading.Thread(target=self.handle).start()
