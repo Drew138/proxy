@@ -1,4 +1,5 @@
 import sys
+import os
 import time
 import threading
 
@@ -24,7 +25,7 @@ class DEQ:
         self.size: int = 0
 
     # Add a new node to the front of the queue and return it
-    def add(self, data: list(str, str, int)):
+    def add(self, data):
         temp = Node(*data)
         temp.next = self.head
         if self.head:
@@ -89,7 +90,7 @@ class DEQ:
 
 
 class Cache:
-    def __init__(self, cache_size: int, ttl: int, delimiter: str, path_to_persistence: str, lock: threading.Lock):
+    def __init__(self, cache_size: int, ttl: int, delimiter: str, path_to_persistence: str, lock: threading.Lock, sleep: int):
         # Config variables
         self.PATH_TO_PERSISTENCE: str = path_to_persistence
         self.MAX_SIZE: int = cache_size
@@ -101,13 +102,21 @@ class Cache:
         self.CURRENT_SIZE: int = 0
         self.in_deq: dict = {}
         self.deq: DEQ = DEQ()
+        
+        # Time
+        self.SLEEP = sleep
 
-        # Load cache from persistence
-        with open(self.persistence, 'r') as file:
-            for line in reversed(file.readlines()):
-                res, req, TTL: int = line.split(self.DELIMITER)
-                node = self.deq.add([req, res, TTL])
-                self.in_deq[req] = node
+        print('Loading cache...')
+        if os.path.exists(self.PATH_TO_PERSISTENCE):
+            print('Cache found, loading...')
+            
+            print('self.PATH_TO_PERSISTENCE', self.PATH_TO_PERSISTENCE)
+            # Load cache from persistence
+            with open(self.PATH_TO_PERSISTENCE, 'r') as file:
+                for line in reversed(file.readlines()):
+                    res, req, TTL = line.split(self.DELIMITER)
+                    node = self.deq.add([req, res, TTL])
+                    self.in_deq[req] = node
 
     def add(self, request: str, response: str):
         with self.lock:
@@ -135,6 +144,13 @@ class Cache:
             # Request not in cache, return None
             return None
 
+    def check_time(self):
+        while True:
+            self.update_time()
+            self.save_cache()
+            time.sleep(self.SLEEP)
+
+    
     def update_time(self):
         with self.lock:
             curr: Node = self.deq.tail
@@ -155,7 +171,7 @@ class Cache:
                 # If TTL is 0 or less, remove node from cache
                 if node.TTL <= 0:
                     self.deq.pop()
-                    self.CURRENT_SIZE -= sys.getsizeof(node.res)
+                    self.CURRENT_SIZE -= sys.getsizeof(node)
                     del self.in_deq[node.req]
 
                 # Move to next node

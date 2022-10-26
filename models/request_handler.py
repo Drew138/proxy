@@ -2,7 +2,15 @@ import socket
 import threading
 from models.config import Config
 from models.target import Target
+import logging
 
+logging.basicConfig(
+    level=logging.INFO, 
+    filename='proxy.log', 
+    filemode='a', 
+    format='%(asctime)s - %(levelname)s - %(message)s', 
+    datefmt='%d-%b-%y %H:%M:%S'
+)
 
 class RequestHandlder:
 
@@ -19,12 +27,12 @@ class RequestHandlder:
     def _handle_logging(function):
         def logged_method(self, *args, **kwargs) -> None:
             try:
-                function(self, *args, **kwargs)
-                # TODO log request here
+                request, response = function(self, *args, **kwargs)
+                logging.info('=== Request ===\n%s\n=== Response ===\n%s', request, response)
+                print('=== Request ===\n%s\n=== Response ===\n%s', request, response)
             except Exception as e:
                 print(e)
-                # TODO log errors here
-                pass
+                logging.error('Error: %s', e)
         return logged_method
 
     # @_handle_logging
@@ -38,8 +46,15 @@ class RequestHandlder:
                 self.send_data(_socket, request)
                 response_header, response_content = self.receive_data(_socket)
                 response = response_header + self.SEPARATOR + response_content
+                
+                # Cache response
+                self.cache_response(request_header, response)
+        
+        
         self.send_data(self.connection, response)
         self.connection.close()
+        
+        return request, response
 
     def receive_data(self, _socket: socket.socket) -> tuple[bytes, bytes]:
         buffer: bytes = bytes()
@@ -71,7 +86,7 @@ class RequestHandlder:
     def send_data(self, _socket: socket.socket, data_pool: bytes) -> None:
         _socket.sendall(data_pool)
 
-    def is_cached(self, request_header) -> bytes | None:
+    def is_cached(self, request_header):
         response = self.config.cache.get(request_header.decode('utf-8'))
         if response:
             return response.encode()

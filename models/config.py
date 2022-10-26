@@ -11,7 +11,7 @@ class Config:
             os.path.expanduser('~'),
             'proxy.conf'
         )
-        self.delimiter = 'hola'  # TODO change
+        self.delimiter = '¬'  # TODO change
         self.vars = {
             'port': 8080,
             'cache_size': 400,
@@ -26,8 +26,9 @@ class Config:
             'path_to_log': os.path.join(
                 os.path.expanduser('~'),
                 'proxy.log'
-            )
+            ),
         }
+        self.sleep_time: int = 300
         self.lock: Lock = Lock()
         self.read_config()
         self.init_cache()
@@ -40,7 +41,8 @@ class Config:
             self.vars['ttl'],
             self.delimiter,
             self.vars['path_to_persistence'],
-            self.lock
+            self.lock,
+            self.sleep_time
         )
 
     def parse_targets(self, targets_string: list[str]) -> list[Target]:
