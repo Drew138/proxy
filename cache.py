@@ -113,15 +113,16 @@ class Cache:
             print('self.PATH_TO_PERSISTENCE', self.PATH_TO_PERSISTENCE)
             # Load cache from persistence
             with open(self.PATH_TO_PERSISTENCE, 'r') as file:
-                content = "\n".join(file.readlines())
-                registers = content.split(self.DELIMITER+self.DELIMITER+self.DELIMITER)
-                
+                content = "".join(file.read())
+                registers = list(filter(lambda x: (x != ''), content.split(
+                    self.DELIMITER+self.DELIMITER+self.DELIMITER)))
                 for line in registers:
                     res, req, TTL = line.split(self.DELIMITER)
-                    TTL = int(TTL)
+                    TTL = int(float(TTL))
                     node = self.deq.add([req, res, TTL])
                     self.in_deq[req] = node
-    
+        print(self.in_deq)
+
     def add(self, request: str, response: str):
         with self.lock:
             # Check if cache is full and delete oldest nodes while it is
@@ -138,8 +139,11 @@ class Cache:
     def get(self, request: str):
         with self.lock:
             # Check if request is in cache
+            print(request, self.in_deq)
             if request in self.in_deq:
                 node = self.in_deq[request]  # Get node from cache
+                print("=========entered========")
+                print(self.TTL)
                 node.TTL = self.TTL  # Reset TTL
                 node.last_access = time.time()  # Update last access time
                 self.deq.to_front(node)  # Move node to front of cache
@@ -193,7 +197,7 @@ class Cache:
                 # Save node to persistence
                 with open(self.PATH_TO_PERSISTENCE, 'w') as file:
                     file.write(
-                        f'{node.res}{self.DELIMITER}{node.req}{self.DELIMITER}{node.TTL}'+{self.DELIMITER}+{self.DELIMITER}+{self.DELIMITER})
+                        f'{node.res}{self.DELIMITER}{node.req}{self.DELIMITER}{node.TTL}{self.DELIMITER}{self.DELIMITER}{self.DELIMITER}')
 
                 # Move to next node
                 curr = curr.next

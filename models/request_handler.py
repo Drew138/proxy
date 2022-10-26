@@ -30,21 +30,20 @@ class RequestHandlder:
             try:
                 request, response = function(self, *args, **kwargs)
                 logging.info(
-                    '=== Request ===\n%s\n=== Response ===\n%s', request, response)
-                print('=== Request ===\n%s\n=== Response ===\n%s',
+                    '\n=== Request ===\n%s\n=== Response ===\n%s', request, response)
+                print('\n=== Request ===\n%s\n=== Response ===\n%s',
                       request, response)
             except Exception as e:
                 print(e)
                 logging.error('Error: %s', e)
         return logged_method
 
-    # @_handle_logging
-    def handle(self) -> None:
+    @_handle_logging
+    def handle(self) -> tuple[bytes, bytes]:
         request_header, request_content = self.receive_data(self.connection)
         request: bytes = request_header + self.SEPARATOR + request_content
-        if not (response := self.is_cached(request_header)):
+        if not (response := self.is_cached(request)):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as _socket:
-                print("entered")
                 _socket.connect((self.target.host, self.target.port))
                 _socket.settimeout(self.config.vars['connection_timeout'])
                 self.send_data(_socket, request)
@@ -52,7 +51,7 @@ class RequestHandlder:
                 response = response_header + self.SEPARATOR + response_content
 
                 # Cache response
-                self.cache_response(request_header, response)
+                self.cache_response(request, response)
 
         self.send_data(self.connection, response)
         self.connection.close()
@@ -89,13 +88,18 @@ class RequestHandlder:
     def send_data(self, _socket: socket.socket, data_pool: bytes) -> None:
         _socket.sendall(data_pool)
 
-    def is_cached(self, request_header):
-        response = self.config.cache.get(request_header.decode('utf-8'))
+    def is_cached(self, request):
+        print(request)
+        response = self.config.cache.get(request.decode('utf-8'))
+        print("=============== response ===============")
+        print(response)
+        print(request.decode('utf-8'))
         if response:
+            print("returned cached response")
             return response.encode()
         return None
 
-    def cache_response(self, request_header: bytes, response: bytes) -> None:
-        encoded_request_header: str = request_header.decode('utf-8')
+    def cache_response(self, request: bytes, response: bytes) -> None:
+        encoded_request_header: str = request.decode('utf-8')
         encoded_response: str = response.decode('utf-8')
         self.config.cache.add(encoded_request_header, encoded_response)
