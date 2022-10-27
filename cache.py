@@ -12,7 +12,7 @@ class Node:
     def __init__(self, req: bytes, res: bytes, ttl: int) -> None:
         self.request: bytes = req
         self.response: bytes = res
-        self.ttl: int = ttl
+        self.ttl: float = ttl
         self.last_access: float = time.time()
         self.next: Node | None = None
         self.prev: Node | None = None
@@ -26,7 +26,7 @@ class Deque:
         self.tail: Node | None = None
         self.size: int = 0
 
-    def add(self, *args) -> Node | None:
+    def add(self, args) -> Node | None:
         """Add a new node to the front of the queue and return it"""
 
         temp: Node = Node(*args)
@@ -120,7 +120,9 @@ class Cache:
         descriptor: dict[str, int] = {}
         for item in items:
             key, val = item.split(b': ')
-            descriptor[key.decode('utf-8')] = int(val)
+            key = key.decode('utf-8')
+            val = int(val.decode('utf-8'))
+            descriptor[key] = val
         return descriptor
 
     def read_segment(self, file: BufferedReader, descriptor: dict[str, int], key: str, other: bytes) -> tuple[bytes, bytes]:
@@ -150,6 +152,8 @@ class Cache:
             buffer = b''
             while True:
                 line = buffer + file.readline()
+                if not line:
+                    break
                 descriptor = self.parse_descriptor(line)
 
                 request, buffer_request = self.read_segment(
@@ -158,11 +162,9 @@ class Cache:
                     file, descriptor, 'response', buffer_request)
                 ttl, _ = self.read_segment(
                     file, descriptor, 'ttl', buffer_response)
-                # TTL = int(float(TTL))
                 node: Node | None = self.deq.add(
                     [request, response, int(float(ttl))])
                 self.in_deq[request] = node
-                break
 
     def add(self, request: bytes, response: bytes) -> Node | None:
         with self.lock:
@@ -180,7 +182,6 @@ class Cache:
     def get(self, request: bytes) -> bytes:
         with self.lock:
             # Check if request is in cache
-            # print(request, self.in_deq)
             if request in self.in_deq:
                 node = self.in_deq[request]  # Get node from cache
                 node.ttl = self.TTL  # Reset TTL
@@ -234,10 +235,13 @@ class Cache:
                     buffer = bytes()
                     request = node.request
                     response = node.response
-                    ttl = bytes(node.ttl)
-                    descriptor: bytes = b'request: ' + bytes(len(request))
-                    descriptor += b', response: ' + bytes(len(response))
-                    descriptor += b', ttl: ' + bytes(len(ttl)) + b'\n'
+                    ttl = str(int(node.ttl)).encode('utf-8')
+                    len_request = str(len(request)).encode('utf-8')
+                    len_response = str(len(response)).encode('utf-8')
+                    len_ttl = str(len(ttl)).encode('utf-8')
+                    descriptor: bytes = b'request: ' + len_request
+                    descriptor += b', response: ' + len_response
+                    descriptor += b', ttl: ' + len_ttl + b'\n'
 
                     buffer += descriptor + request + response + ttl
 

@@ -39,12 +39,13 @@ class RequestHandlder:
                 self.connection.close()
         return logged_method
 
-    @_handle_logging
+    # @_handle_logging
     def handle(self) -> tuple[bytes, bytes]:
         request: bytes = self.receive_data(self.connection)
         response, can_be_cached = self.is_cached(request)
         if not (response and can_be_cached):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as _socket:
+                print("enterd, didnt use cache")
                 _socket.connect((self.target.host, self.target.port))
                 _socket.settimeout(self.config.vars['connection_timeout'])
                 self.send_data(_socket, request)
@@ -53,7 +54,6 @@ class RequestHandlder:
                 # Cache response
                 if can_be_cached:
                     self.cache_response(request, response)
-
         self.send_data(self.connection, response)
 
         return request, response
@@ -93,15 +93,9 @@ class RequestHandlder:
         return data.startswith((b'HEAD', b'GET'))
 
     def is_cached(self, request) -> tuple[bytes, bool]:
-        # response = self.config.cache.get(request.decode('utf-8'))
         response = self.config.cache.get(request)
         can_be_cached = self.can_be_cached(request)
-        # if response:
-        #     return response.encode()
         return response, can_be_cached
 
     def cache_response(self, request: bytes, response: bytes) -> None:
-        encoded_request_header: str = request.decode('utf-8')
-        encoded_response: str = response.decode('utf-8')
-        self.config.cache.add(encoded_request_header, encoded_response)
-        self.config.cache.add(header, response)
+        self.config.cache.add(request, response)
