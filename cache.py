@@ -84,7 +84,8 @@ class DEQ:
         # If there are more than one node in the queue, set the tail to the second to last node and return the last node
         deleted = self.tail
         self.tail = deleted.prev
-        deleted.prev, self.tail.next = None, None
+        if self.tail:
+            deleted.prev, self.tail.next = None, None
 
         return deleted
 
