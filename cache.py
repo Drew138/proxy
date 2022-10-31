@@ -110,7 +110,6 @@ class Cache:
         if os.path.exists(self.PATH_TO_PERSISTENCE):
             print('Cache found, loading...')
 
-            print('self.PATH_TO_PERSISTENCE', self.PATH_TO_PERSISTENCE)
             # Load cache from persistence
             with open(self.PATH_TO_PERSISTENCE, 'r') as file:
                 content = "".join(file.read())
@@ -121,7 +120,6 @@ class Cache:
                     TTL = int(float(TTL))
                     node = self.deq.add([req, res, TTL])
                     self.in_deq[req] = node
-        print(self.in_deq)
 
     def add(self, request: str, response: str):
         with self.lock:
@@ -139,11 +137,8 @@ class Cache:
     def get(self, request: str):
         with self.lock:
             # Check if request is in cache
-            print(request, self.in_deq)
             if request in self.in_deq:
                 node = self.in_deq[request]  # Get node from cache
-                print("=========entered========")
-                print(self.TTL)
                 node.TTL = self.TTL  # Reset TTL
                 node.last_access = time.time()  # Update last access time
                 self.deq.to_front(node)  # Move node to front of cache
@@ -188,9 +183,7 @@ class Cache:
         with self.lock:
             curr: Node = self.deq.head
 
-            print("chimbo de burro")
             # Iterate through cache
-            print(curr)
             while curr != None:
                 node = curr
 

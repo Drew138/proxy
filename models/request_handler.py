@@ -89,13 +89,8 @@ class RequestHandlder:
         _socket.sendall(data_pool)
 
     def is_cached(self, request):
-        print(request)
         response = self.config.cache.get(request.decode('utf-8'))
-        print("=============== response ===============")
-        print(response)
-        print(request.decode('utf-8'))
         if response:
-            print("returned cached response")
             return response.encode()
         return None
 
