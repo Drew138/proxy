@@ -66,6 +66,7 @@ class Config:
             return
         with open(self.path_to_config_file) as f:
             while line := f.readline():
+                line = line.rstrip('\n')
                 tokens: list[str] = line.split('=')
                 if len(tokens) != 2:
                     raise Exception('Invalid configuration file')
