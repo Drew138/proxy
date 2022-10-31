@@ -39,13 +39,12 @@ class RequestHandlder:
                 self.connection.close()
         return logged_method
 
-    # @_handle_logging
+    @_handle_logging
     def handle(self) -> tuple[bytes, bytes]:
         request: bytes = self.receive_data(self.connection)
         response, can_be_cached = self.is_cached(request)
         if not (response and can_be_cached):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as _socket:
-                print("enterd, didnt use cache")
                 _socket.connect((self.target.host, self.target.port))
                 _socket.settimeout(self.config.vars['connection_timeout'])
                 self.send_data(_socket, request)
