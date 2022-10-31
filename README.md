@@ -2,6 +2,9 @@
 
 ANDRÉS SALAZAR GALEANO, JULIÁN DAVID RAMÍREZ LOPERA
 
+## Version Word:
+https://docs.google.com/document/d/1_cjGigHmfxXuZReNlV2eocjbcbY9NfRiEBSyd8n_TGo/edit?usp=sharing
+
 ## Abstract
 Los Proxy son intermediarios entre las máquinas cliente y los servidores que alojan las respuestas. Estos proveen un conjunto de funcionalidades y medios de seguridad que varían dependiendo de los casos de uso.
 
