@@ -7,7 +7,7 @@ import os
 class Config:
     def __init__(self) -> None:
         self.path_to_config_file: str = os.path.join(
-            os.path.expanduser('~'),
+            '/home/ubuntu',
             'proxy.conf'
         )
         self.delimiter = '¬'  # TODO change
@@ -19,11 +19,11 @@ class Config:
             'unit_time': 300,
             'connection_timeout': 10,
             'path_to_persistence': os.path.join(
-                os.path.expanduser('~'),
+                '/home/ubuntu',
                 'persistence.proxy'
             ),
             'path_to_log': os.path.join(
-                os.path.expanduser('~'),
+                '/home/ubuntu',
                 'proxy.log'
             ),
         }
